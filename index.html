@@ -1,1 +1,170 @@
-hh
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spider-Man VR: Browser Prototype</title>
+    <style>
+      :root { --bg:#0a1020; --panel:#121c34; --text:#eef3ff; --muted:#a8b5da; --red:#ff2f4f; --blue:#31c3ff; --gold:#ffc857; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family:Inter,system-ui,Arial,sans-serif; color:var(--text); background:radial-gradient(circle at top,#1a2d5a 0%,var(--bg) 45%); }
+      .wrap { max-width:1100px; margin:0 auto; padding:16px; }
+      .hero { background:linear-gradient(140deg,rgba(255,47,79,.25),rgba(49,195,255,.18)); border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:14px; margin-bottom:12px; }
+      .row { display:grid; grid-template-columns: 1fr 320px; gap:12px; }
+      .panel { background:var(--panel); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; }
+      canvas { width:100%; height:auto; background:#0b1226; border-radius:10px; border:1px solid rgba(255,255,255,.1); }
+      h1,h2,h3,p { margin:0 0 8px; }
+      ul { margin:0; padding-left:18px; }
+      li { color:var(--muted); margin:4px 0; }
+      .chip { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; margin-right:6px; border:1px solid rgba(255,255,255,.2); }
+      .chip.stealth { background:rgba(49,195,255,.2); }
+      .chip.regular { background:rgba(255,47,79,.2); }
+      .chip.boss { background:rgba(255,200,87,.2); }
+      .stat { color:var(--muted); font-size:14px; margin:4px 0; }
+      .big { color:var(--gold); font-weight:700; }
+      .link-box { margin-top: 10px; padding: 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; background: rgba(0,0,0,.15); }
+      .link-box label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+      .link-row { display:flex; gap:6px; }
+      .link-row input { flex:1; min-width:0; border-radius:8px; border:1px solid rgba(255,255,255,.2); background:#0c1430; color:var(--text); padding:6px 8px; }
+      .btn { border:1px solid rgba(255,255,255,.2); background:rgba(49,195,255,.25); color:var(--text); border-radius:8px; padding:6px 10px; cursor:pointer; }
+      .play-link { display:inline-block; margin-top:8px; color:#9fe7ff; word-break:break-all; }
+      @media (max-width: 900px){ .row{ grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>Spider-Man VR: The One and Only — Browser Mode</h1>
+        <p>This is now a <strong>playable browser prototype</strong>. Move, pick missions, defeat bosses, and replay levels.</p>
+        <span class="chip stealth">! Stealth</span>
+        <span class="chip regular">X Regular</span>
+        <span class="chip boss">⚡ Boss</span>
+
+        <div class="link-box">
+          <label for="ipInput">Quest game link (replace with your computer IP):</label>
+          <div class="link-row">
+            <input id="ipInput" type="text" value="192.168.1.24" aria-label="Computer local IP" />
+            <button class="btn" id="setLinkBtn" type="button">Set Link</button>
+          </div>
+          <a id="playLink" class="play-link" href="http://192.168.1.24:4173" target="_blank" rel="noopener noreferrer">Open Game Link: http://192.168.1.24:4173</a>
+        </div>
+      </section>
+
+      <section class="row">
+        <article class="panel">
+          <canvas id="game" width="760" height="520" aria-label="Spider-Man browser prototype canvas"></canvas>
+        </article>
+
+        <aside class="panel">
+          <h2>Mission Console</h2>
+          <p class="stat">Spawn: Apartment Hub ✅</p>
+          <p class="stat">Mode: <span id="mode">Free Play</span></p>
+          <p class="stat">Current Objective: <span id="objective">Swing around the city</span></p>
+          <p class="stat">Bosses Defeated: <span id="bosses">0</span>/4</p>
+          <p class="stat">Special Level Unlock: <span id="unlock">Locked</span></p>
+          <hr style="border-color: rgba(255,255,255,.15); border-style:solid; border-width:1px 0 0; margin:10px 0;" />
+          <h3>Controls</h3>
+          <ul>
+            <li>Move: WASD / Arrow Keys</li>
+            <li>Boost Swing: Shift</li>
+            <li>Interact Mission: Touch marker</li>
+          </ul>
+          <h3 style="margin-top:10px;">Boss Queue</h3>
+          <ul>
+            <li>Electro</li><li>Vulture</li><li>Rhino</li><li>Doctor Octavius (Mega Boss)</li>
+          </ul>
+          <p style="margin-top:8px; color:var(--muted);">Powered by Intel</p>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const ipInput = document.getElementById('ipInput');
+      const setLinkBtn = document.getElementById('setLinkBtn');
+      const playLink = document.getElementById('playLink');
+
+      function setGameLink() {
+        const ip = (ipInput.value || '').trim();
+        if (!ip) return;
+        const url = `http://${ip}:4173`;
+        playLink.href = url;
+        playLink.textContent = `Open Game Link: ${url}`;
+      }
+
+      setLinkBtn.addEventListener('click', setGameLink);
+      ipInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          setGameLink();
+        }
+      });
+
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const modeEl = document.getElementById('mode');
+      const objEl = document.getElementById('objective');
+      const bossesEl = document.getElementById('bosses');
+      const unlockEl = document.getElementById('unlock');
+
+      const player = { x: 60, y: 470, r: 10, speed: 2.6, color: '#ff2f4f' };
+      let bossesDefeated = 0;
+      const keys = new Set();
+      const missions = [
+        { x: 140, y: 120, type:'stealth', label:'Warehouse Stealth', done:false },
+        { x: 280, y: 360, type:'regular', label:'Car Hijack Rescue', done:false },
+        { x: 460, y: 170, type:'regular', label:'Street Combat', done:false },
+        { x: 650, y: 120, type:'boss', label:'Electro Boss', done:false },
+        { x: 620, y: 270, type:'boss', label:'Vulture Boss', done:false },
+        { x: 560, y: 420, type:'boss', label:'Rhino Boss', done:false },
+        { x: 710, y: 70, type:'boss', label:'Doctor Octavius Mega Boss', done:false }
+      ];
+
+      function colorFor(type){ return type==='stealth' ? '#31c3ff' : type==='boss' ? '#ffc857' : '#ff2f4f'; }
+      function markerFor(type){ return type==='stealth' ? '!' : type==='boss' ? '⚡' : 'X'; }
+
+      function drawCity(){
+        ctx.fillStyle = '#0f1831'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        for (let i=0;i<14;i++) { ctx.fillStyle = i%2 ? '#1a2a51' : '#152343'; ctx.fillRect(i*55, 250 - (i%3)*22, 45, 210 + (i%4)*20); }
+        ctx.fillStyle = '#1f315d'; ctx.fillRect(0,480,canvas.width,40);
+        ctx.fillStyle = '#263a6d'; ctx.fillRect(20,430,90,50); ctx.fillStyle = '#d6e2ff'; ctx.fillText('Apartment', 28, 460);
+      }
+
+      function update(){
+        const boost = keys.has('Shift') ? 1.8 : 1;
+        if (keys.has('ArrowUp') || keys.has('w')) player.y -= player.speed*boost;
+        if (keys.has('ArrowDown') || keys.has('s')) player.y += player.speed*boost;
+        if (keys.has('ArrowLeft') || keys.has('a')) player.x -= player.speed*boost;
+        if (keys.has('ArrowRight') || keys.has('d')) player.x += player.speed*boost;
+        player.x = Math.max(8, Math.min(canvas.width-8, player.x));
+        player.y = Math.max(8, Math.min(canvas.height-8, player.y));
+
+        for (const m of missions){
+          if (!m.done && Math.hypot(player.x-m.x, player.y-m.y) < 18){
+            m.done = true;
+            if (m.type==='boss') bossesDefeated++;
+            modeEl.textContent = m.type==='stealth' ? 'Stealth Mission' : m.type==='boss' ? 'Boss Battle' : 'Regular Mission';
+            objEl.textContent = `Completed: ${m.label}`;
+            bossesEl.textContent = bossesDefeated;
+            if (bossesDefeated >= 4){ unlockEl.textContent = 'UNLOCKED — Replay Levels + Free Enemies/Bosses'; unlockEl.className = 'big'; }
+          }
+        }
+      }
+
+      function draw(){
+        drawCity();
+        ctx.font = '14px Inter, sans-serif';
+        for (const m of missions){
+          ctx.beginPath(); ctx.arc(m.x,m.y, m.done?7:10, 0, Math.PI*2); ctx.fillStyle = m.done ? '#6b7280' : colorFor(m.type); ctx.fill();
+          ctx.fillStyle = '#e8efff'; ctx.fillText(markerFor(m.type), m.x-4, m.y+4);
+        }
+        ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle = player.color; ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.stroke();
+      }
+
+      function loop(){ update(); draw(); requestAnimationFrame(loop); }
+      window.addEventListener('keydown', e => keys.add(e.key));
+      window.addEventListener('keyup', e => keys.delete(e.key));
+      loop();
+    </script>
+  </body>
+</html>
